@@ -24,7 +24,7 @@ assert.deepEqual(structured.values, {
 const fallback = extractJobDetails({
   title: 'Data Analyst - Daylight | LinkedIn', url: 'https://www.linkedin.com/jobs/view/123',
   canonicalUrl: '', meta: { 'og:site_name': 'LinkedIn' }, jsonLd: [], headings: ['Data Analyst'],
-  companies: ['Daylight'], locations: ['Singapore'], salaries: [], employmentTypes: ['Full-time'],
+  brands: [], companies: ['Daylight'], locations: ['Singapore'], salaries: [], employmentTypes: ['Full-time'], bodyText: '',
 }, '2026-08-11')
 
 assert.equal(fallback.values.company, 'Daylight')
@@ -32,5 +32,26 @@ assert.equal(fallback.values.role, 'Data Analyst')
 assert.equal(fallback.values.source, 'LinkedIn')
 assert.equal(fallback.values.salary, '')
 assert.equal(fallback.captured.salary, false)
+
+const ubs = extractJobDetails({
+  title: '2027 Summer Internship - Group Technology Office - Hong Kong',
+  url: 'https://jobs.ubs.com/TGnewUI/Search/home/HomeWithPreLoad?jobDetails=348129_5131',
+  canonicalUrl: '', meta: {}, jsonLd: [],
+  headings: ['2027 Summer Internship - Group Technology Office - Hong Kong'],
+  brands: ['UBS Careers'], companies: [], locations: [], salaries: [], employmentTypes: [],
+  bodyText: 'Singapore\nInformation Technology (IT)\nCity\nSingapore\nYour role',
+}, '2026-08-11')
+
+assert.equal(ubs.values.company, 'UBS')
+assert.equal(ubs.values.location, 'Singapore')
+assert.equal(ubs.values.type, 'Internship')
+
+const defaultLocation = extractJobDetails({
+  title: 'Analyst', url: 'https://example.com/job', canonicalUrl: '', meta: {}, jsonLd: [],
+  headings: ['Analyst'], brands: [], companies: ['Example Co'], locations: [], salaries: [], employmentTypes: [], bodyText: '',
+}, '2026-08-11')
+
+assert.equal(defaultLocation.values.location, 'Singapore')
+assert.equal(defaultLocation.captured.location, false)
 
 console.log('Extension extraction tests passed')

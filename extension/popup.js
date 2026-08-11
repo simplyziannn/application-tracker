@@ -9,9 +9,11 @@ const notice = document.querySelector('#notice')
 const trackerInput = document.querySelector('#tracker-url')
 const summary = document.querySelector('#capture-summary')
 const pageStatus = document.querySelector('#page-status')
-const trackedFields = ['company', 'role', 'type', 'location', 'salary', 'source']
+const trackedFields = ['company', 'role', 'type', 'location', 'source']
+const defaultTrackerUrl = 'https://application-tracker-production-2208.up.railway.app'
+const legacyTrackerUrl = 'http://localhost:3001'
 
-let currentTrackerUrl = 'http://localhost:3001'
+let currentTrackerUrl = defaultTrackerUrl
 
 const showNotice = (message, tone = '') => {
   notice.textContent = message
@@ -63,13 +65,15 @@ const readCurrentPage = async () => {
 const loadSettings = async () => {
   if (previewMode) return
   const saved = await extension.storage.sync.get({ trackerUrl: currentTrackerUrl })
-  currentTrackerUrl = saved.trackerUrl
+  currentTrackerUrl = saved.trackerUrl === legacyTrackerUrl ? defaultTrackerUrl : saved.trackerUrl
+  if (saved.trackerUrl === legacyTrackerUrl) await extension.storage.sync.set({ trackerUrl: currentTrackerUrl })
   trackerInput.value = currentTrackerUrl
 }
 
 const normalizeTrackerUrl = (value) => {
   const url = new URL(value.trim())
   if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Enter a valid http or https Northstar address.')
+  url.hash = ''
   return url.href.replace(/\/$/, '')
 }
 

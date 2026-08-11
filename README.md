@@ -23,7 +23,7 @@ The companion extension reads the job posting in your active tab, pre-fills the 
 4. Choose **Load unpacked** and select the `extension` folder in this project.
 5. Pin **Northstar Job Capture**, open a job posting, and click the extension.
 
-The first save asks for permission to connect to your Northstar address. It defaults to `http://localhost:3001`. After deploying, open **Connection settings** in the extension and replace that with your Railway URL.
+The first save asks for permission to connect to your Northstar address. This copy defaults to `https://application-tracker-production-2208.up.railway.app`. You can change the destination at any time under **Connection settings** in the extension.
 
 ## Deploy to Railway
 

@@ -2,7 +2,7 @@
   const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim()
   const unique = (values) => [...new Set(values.map(clean).filter(Boolean))]
   const collect = (selectors, limit = 8) => unique(
-    selectors.flatMap((selector) => [...document.querySelectorAll(selector)].map((element) => element.innerText || element.textContent)),
+    selectors.flatMap((selector) => [...document.querySelectorAll(selector)].map((element) => element.getAttribute('alt') || element.innerText || element.textContent)),
   ).slice(0, limit)
 
   const meta = Object.fromEntries(
@@ -23,6 +23,13 @@
     jsonLd,
     meta,
     headings: collect(['h1', '[data-testid*="job-title"]', '[class*="job-title"]']),
+    brands: collect([
+      'header img[alt]',
+      '[class*="logo"] img[alt]',
+      '[class*="brand"] img[alt]',
+      '[class*="logo"]',
+      '[class*="brand-name"]',
+    ]),
     companies: collect([
       '[data-company-name]',
       '[data-testid*="company"]',
@@ -38,6 +45,7 @@
       '.jobsearch-JobInfoHeader-subtitle [data-testid="inlineHeader-companyLocation"]',
       '[class*="job-location"]',
       '[class*="location"]',
+      '[class*="city"]',
     ]),
     salaries: collect([
       '[data-testid*="salary"]',
@@ -49,5 +57,6 @@
       '[class*="employment-type"]',
       '[class*="job-type"]',
     ]),
+    bodyText: String(document.body?.innerText || '').slice(0, 80000),
   }
 })()

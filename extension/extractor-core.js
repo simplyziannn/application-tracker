@@ -6,6 +6,29 @@ const blockedCompanies = new Set([
 
 const firstUseful = (values = []) => values.map(clean).find((value) => value && value.length < 180) || ''
 
+const cleanCompany = (value) => clean(value).replace(/\s+(?:careers?|jobs?|job search)$/i, '').trim()
+
+const companyFromUrl = (url) => {
+  try {
+    const parts = new URL(url).hostname.replace(/^www\./, '').split('.')
+    if (!['jobs', 'job', 'careers', 'career'].includes(parts[0]) || parts.length < 3) return ''
+    const candidate = parts[1]
+    if (!candidate || blockedCompanies.has(candidate.toLowerCase())) return ''
+    return candidate.length <= 4 ? candidate.toUpperCase() : `${candidate[0].toUpperCase()}${candidate.slice(1)}`
+  } catch {
+    return ''
+  }
+}
+
+const locationFromBody = (bodyText) => {
+  const lines = String(bodyText || '').split(/\r?\n/).map(clean).filter(Boolean)
+  const labels = new Set(['city', 'location', 'job location', 'work location'])
+  for (let index = 0; index < lines.length - 1; index += 1) {
+    if (labels.has(lines[index].replace(/:$/, '').toLowerCase()) && lines[index + 1].length < 100) return lines[index + 1]
+  }
+  return ''
+}
+
 const flattenJson = (value, output = []) => {
   if (Array.isArray(value)) value.forEach((item) => flattenJson(item, output))
   else if (value && typeof value === 'object') {
@@ -94,13 +117,18 @@ export function extractJobDetails(raw, today = new Date().toISOString().slice(0,
   const posting = findJobPosting(raw.jsonLd)
   const structuredCompany = clean(posting.hiringOrganization?.name || posting.hiringOrganization)
   const pageCompany = firstUseful(raw.companies)
-  const siteName = clean(raw.meta?.['og:site_name'])
-  const company = structuredCompany || pageCompany || (!blockedCompanies.has(siteName.toLowerCase()) ? siteName : '')
-  const role = cleanRole(clean(posting.title) || firstUseful(raw.headings) || clean(raw.meta?.['og:title']) || raw.title, company)
-  const location = formatAddress(posting.jobLocation) || clean(posting.jobLocationType) || firstUseful(raw.locations)
-  const salary = formatSalary(posting.baseSalary) || firstUseful(raw.salaries)
-  const type = mapEmploymentType(posting.employmentType) || mapEmploymentType(firstUseful(raw.employmentTypes))
+  const brandCompany = cleanCompany(firstUseful(raw.brands))
+  const siteName = cleanCompany(raw.meta?.['og:site_name'])
   const url = clean(raw.canonicalUrl || raw.url)
+  const company = cleanCompany(structuredCompany || pageCompany)
+    || brandCompany
+    || (!blockedCompanies.has(siteName.toLowerCase()) ? siteName : '')
+    || companyFromUrl(url)
+  const role = cleanRole(clean(posting.title) || firstUseful(raw.headings) || clean(raw.meta?.['og:title']) || raw.title, company)
+  const extractedLocation = formatAddress(posting.jobLocation) || clean(posting.jobLocationType) || firstUseful(raw.locations) || locationFromBody(raw.bodyText)
+  const location = extractedLocation || 'Singapore'
+  const salary = formatSalary(posting.baseSalary) || firstUseful(raw.salaries)
+  const type = mapEmploymentType(posting.employmentType) || mapEmploymentType(firstUseful(raw.employmentTypes)) || mapEmploymentType(role)
 
   const values = {
     company,
@@ -117,6 +145,7 @@ export function extractJobDetails(raw, today = new Date().toISOString().slice(0,
     notes: '',
   }
   const captured = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Boolean(value)]))
+  captured.location = Boolean(extractedLocation)
   return { values, captured }
 }
 
@@ -126,9 +155,11 @@ export const sampleJobPage = {
   canonicalUrl: 'https://jobs.example.com/acme/product-design-intern',
   meta: { 'og:site_name': 'Example Jobs' },
   headings: ['Product Design Intern'],
+  brands: [],
   companies: ['Acme'],
   locations: [],
   salaries: [],
   employmentTypes: ['Internship'],
+  bodyText: '',
   jsonLd: [],
 }

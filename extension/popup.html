@@ -67,9 +67,8 @@
         </div>
 
         <div class="field" data-field="salary">
-          <label for="salary">Salary</label>
+          <label for="salary">Salary <span>Optional</span></label>
           <input id="salary" name="salary" placeholder="e.g. SGD 4,500 per month" />
-          <small>Needs your input</small>
         </div>
 
         <div class="field-row">
@@ -122,8 +121,8 @@
         <summary>Connection settings</summary>
         <div>
           <label for="tracker-url">Northstar address</label>
-          <input id="tracker-url" type="url" value="http://localhost:3001" spellcheck="false" />
-          <small>Change this to your Railway address after deployment.</small>
+          <input id="tracker-url" type="url" value="https://application-tracker-production-2208.up.railway.app" spellcheck="false" />
+          <small>This is the Railway tracker that receives captured applications.</small>
         </div>
       </details>
     </main>

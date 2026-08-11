@@ -29,8 +29,8 @@ button, input, select, textarea { font: inherit; }
 .notice.error { color: #a52f2f; background: #fff0f0; }
 .hidden { display: none !important; }
 form { display: grid; gap: 14px; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.field { display: grid; gap: 6px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 12px; }
+.field { display: grid; align-content: start; gap: 6px; }
 .field label, .settings label { color: #3d465c; font-size: 12px; font-weight: 750; }
 .field label span { float: right; color: #8b92a2; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .field input, .field select, .field textarea, .settings input { width: 100%; min-height: 42px; border: 1px solid #dce0e8; border-radius: 8px; outline: 0; padding: 9px 11px; color: var(--ink); background: #fff; font-size: 13px; transition: border-color .15s, box-shadow .15s, background .15s; }
