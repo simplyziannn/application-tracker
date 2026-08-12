@@ -1,8 +1,8 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { sankey, sankeyJustify, sankeyLinkHorizontal } from 'd3-sankey'
 import {
-  ArrowDownToLine, ArrowRight, ArrowUpRight, BarChart3, BriefcaseBusiness,
-  CalendarDays, Check, ChevronDown, CirclePlus, Download, FileUp, Gauge,
+  ArrowRight, BookOpen, Brain, BriefcaseBusiness, CalendarDays, Check,
+  ChevronDown, Clock3, Code2, Download,
   LayoutDashboard, Menu, MoreHorizontal, Pencil, Plus, Search, Sparkles,
   Target, Trash2, TrendingUp, Upload, UserRound, X,
 } from 'lucide-react'
@@ -11,7 +11,7 @@ const NAV = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'applications', label: 'Applications', icon: BriefcaseBusiness },
   { id: 'pipeline', label: 'Pipeline', icon: Target },
-  { id: 'insights', label: 'Insights', icon: BarChart3 },
+  { id: 'practice', label: 'Practice', icon: Code2 },
 ]
 const STATUSES = ['Applied', 'Screening', 'Interview', 'Offer', 'Closed']
 const STATUS_CLASS = Object.fromEntries(STATUSES.map((status) => [status, status.toLowerCase()]))
@@ -295,35 +295,122 @@ function Pipeline({ applications, onEdit }) {
   </section>
 }
 
-function Insights({ applications }) {
-  const monthly = useMemo(() => {
-    const map = new Map()
-    applications.forEach((item) => { const key = item.appliedDate?.slice(0, 7); if (key) map.set(key, (map.get(key) || 0) + 1) })
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(-6)
-  }, [applications])
-  const maxMonthly = Math.max(1, ...monthly.map(([, count]) => count))
-  const sources = useMemo(() => {
-    const map = new Map()
-    applications.forEach((item) => map.set(item.source || 'Other', (map.get(item.source || 'Other') || 0) + 1))
-    return [...map.entries()].sort((a, b) => b[1] - a[1])
-  }, [applications])
-  const response = applications.filter((item) => ['Screening', 'Interview', 'Offer'].includes(item.status)).length
-  const offer = applications.filter((item) => item.status === 'Offer').length
-  return <section className="page insights-page">
-    <PageHeading kicker="Your patterns" title="Insights" copy="A quieter look at what is working in your search." />
-    <div className="insight-hero">
-      <div><span>Response rate</span><strong>{Math.round(response / Math.max(1, applications.length) * 100)}%</strong><p>{response} of {applications.length} applications moved beyond the initial stage.</p></div>
-      <div className="ring" style={{ '--progress': `${response / Math.max(1, applications.length) * 360}deg` }}><span>{response}</span><small>responses</small></div>
-      <div className="insight-note"><Sparkles /><div><strong>Your strongest signal</strong><p>{offer ? 'You have an offer in hand. Keep the rest of the pipeline warm while you decide.' : 'Referrals are creating the warmest path into conversations.'}</p></div></div>
-    </div>
-    <div className="insights-grid">
-      <section className="panel chart-panel"><div className="panel-heading"><div><h2>Application pace</h2><p>Applications submitted each month</p></div><Gauge /></div>
-        <div className="bar-chart">{monthly.map(([month, count]) => <div className="bar-item" key={month}><span className="bar-value">{count}</span><div className="bar" style={{ height: `${Math.max(18, count / maxMonthly * 100)}%` }} /><small>{new Intl.DateTimeFormat('en', { month: 'short' }).format(new Date(`${month}-02`))}</small></div>)}</div>
+const PRACTICE_WEEKS = [
+  {
+    title: 'Foundations', topics: ['Arrays & strings', 'Hash maps', 'Two pointers'],
+    days: [
+      ['Array traversal', 'Two Sum', 'Write the pattern in your own words'],
+      ['String basics', 'Valid Anagram', 'Explain the frequency-map idea aloud'],
+      ['Hash maps', 'Contains Duplicate', 'Redo Two Sum without notes'],
+      ['Two pointers', 'Valid Palindrome', 'Name when two pointers are useful'],
+      ['In-place arrays', 'Move Zeroes', 'Trace every pointer movement'],
+      ['Review day', 'Redo two missed problems', 'Compare your first and second attempts'],
+      ['Light day', 'Read your pattern notes', 'Write one question for next week'],
+    ],
+  },
+  {
+    title: 'Core patterns', topics: ['Sliding window', 'Stack', 'Binary search'],
+    days: [
+      ['Sliding window', 'Best Time to Buy and Sell Stock', 'Draw the window on paper'],
+      ['Growing windows', 'Longest Substring Without Repeating Characters', 'Use hints, then explain each pointer'],
+      ['Stack basics', 'Valid Parentheses', 'Say why LIFO fits the problem'],
+      ['Stack state', 'Min Stack', 'Describe the extra-state tradeoff'],
+      ['Binary search', 'Binary Search', 'Write the loop invariants'],
+      ['Boundaries', 'Search Insert Position', 'Test empty and one-item cases'],
+      ['Review day', 'Solve two easy problems in 45 minutes', 'Log where you got stuck'],
+    ],
+  },
+  {
+    title: 'Structures', topics: ['Linked lists', 'Trees', 'BFS & DFS'],
+    days: [
+      ['Linked lists', 'Reverse Linked List', 'Draw prev, current, and next'],
+      ['List merging', 'Merge Two Sorted Lists', 'Explain the dummy-node pattern'],
+      ['Tree recursion', 'Maximum Depth of Binary Tree', 'State the base case first'],
+      ['Tree comparison', 'Same Tree', 'Trace one recursive call stack'],
+      ['Breadth-first search', 'Binary Tree Level Order Traversal', 'Explain why a queue fits'],
+      ['Depth-first search', 'Invert Binary Tree', 'Write recursive and iterative outlines'],
+      ['Review day', 'Redo one list and one tree problem', 'Draw both structures from memory'],
+    ],
+  },
+  {
+    title: 'Interview mode', topics: ['Mixed practice', 'Timed sets', 'Mock interviews'],
+    days: [
+      ['Mixed set', 'Two Sum + Valid Palindrome', 'Finish in 45 minutes, then review'],
+      ['Mixed set', 'Best Time to Buy and Sell Stock + Valid Parentheses', 'Explain before coding'],
+      ['Mock interview', 'Two unseen easy problems', 'Use a strict 45-minute timer'],
+      ['Weak-spot day', 'Redo your two hardest misses', 'Update your pattern notes'],
+      ['Guided medium', 'Group Anagrams', 'Use hints only after 15 minutes'],
+      ['Full mock', 'One easy + one medium', 'Speak every decision aloud'],
+      ['Final benchmark', 'Redo Day 1 and one unseen problem', 'Choose next month’s three focus patterns'],
+    ],
+  },
+]
+
+const PRACTICE_DAYS = PRACTICE_WEEKS.flatMap((week, weekIndex) => week.days.map((tasks, dayIndex) => ({
+  id: weekIndex * 7 + dayIndex + 1,
+  week: weekIndex + 1,
+  title: tasks[0],
+  tasks: [`Learn: ${tasks[0]}`, `Solve: ${tasks[1]}`, `Reflect: ${tasks[2]}`],
+})))
+
+function readPracticeProgress() {
+  try { return JSON.parse(window.localStorage.getItem('northstar-practice-v1') || '{}') }
+  catch { return {} }
+}
+
+function Practice() {
+  const [progress, setProgress] = useState(readPracticeProgress)
+  const [planOpen, setPlanOpen] = useState(false)
+  const [seconds, setSeconds] = useState(45 * 60)
+  const [timerRunning, setTimerRunning] = useState(false)
+  const completedDays = PRACTICE_DAYS.filter((day) => day.tasks.every((_, index) => progress[`${day.id}-${index}`])).length
+  const currentDay = PRACTICE_DAYS.find((day) => !day.tasks.every((_, index) => progress[`${day.id}-${index}`])) || PRACTICE_DAYS.at(-1)
+  const graduation = new Date('2027-01-01T00:00:00+08:00')
+  const daysToGraduation = Math.max(0, Math.ceil((graduation - Date.now()) / 86400000))
+  const activeWeek = currentDay.week
+
+  useEffect(() => { window.localStorage.setItem('northstar-practice-v1', JSON.stringify(progress)) }, [progress])
+  useEffect(() => {
+    if (!timerRunning) return undefined
+    const timer = window.setInterval(() => setSeconds((value) => {
+      if (value <= 1) { window.clearInterval(timer); setTimerRunning(false); return 0 }
+      return value - 1
+    }), 1000)
+    return () => window.clearInterval(timer)
+  }, [timerRunning])
+
+  const toggleTask = (dayId, taskIndex) => setProgress((current) => ({ ...current, [`${dayId}-${taskIndex}`]: !current[`${dayId}-${taskIndex}`] }))
+  const timerLabel = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+
+  return <section className="page practice-page">
+    <PageHeading title="Build interview confidence." copy="A beginner-friendly plan that turns practice into patterns you can recognize." />
+    <div className="practice-focus-grid">
+      <section className="practice-today panel">
+        <div className="practice-today-copy"><span>Today · Day {currentDay.id}</span><h2>{currentDay.id === 1 ? 'Start with arrays, not pressure.' : currentDay.title}</h2><p>Small steps today build the confidence you’ll rely on tomorrow.</p></div>
+        <div className="today-tasks">
+          {currentDay.tasks.map((task, index) => <label className={progress[`${currentDay.id}-${index}`] ? 'complete' : ''} key={task}>
+            <input type="checkbox" checked={Boolean(progress[`${currentDay.id}-${index}`])} onChange={() => toggleTask(currentDay.id, index)} /><span className="task-check"><Check /></span><span>{task}</span><ChevronDown />
+          </label>)}
+        </div>
+        <footer><span><Clock3 /> {timerRunning || seconds < 45 * 60 ? timerLabel : '45–60 min'}</span><button className="button primary" onClick={() => { if (seconds === 0) setSeconds(45 * 60); setTimerRunning((running) => !running) }}>{timerRunning ? 'Pause session' : seconds < 45 * 60 && seconds > 0 ? 'Continue session' : "Start today's session"}</button></footer>
       </section>
-      <section className="panel sources-panel"><div className="panel-heading"><div><h2>Where roles come from</h2><p>Source mix across your search</p></div><ArrowUpRight /></div>
-        <div className="source-list">{sources.map(([source, count], index) => <div key={source}><span><i style={{ '--source': ['#ff5a36','#376edb','#7558e8','#13a57a','#e2a21b'][index % 5] }} />{source}</span><div className="source-track"><b style={{ width: `${count / applications.length * 100}%` }} /></div><strong>{count}</strong></div>)}</div>
+      <section className="graduation-panel panel">
+        <span>Graduation target</span><h2>Jan 1, 2027</h2><p>{daysToGraduation} days to build momentum</p>
+        <div className="goal-path">
+          {[['Learn fundamentals', BookOpen], ['Build patterns', Brain], ['Mock interviews', Code2], ['Apply ready', BriefcaseBusiness]].map(([label, Icon], index) => <div className={index === 0 ? 'active' : ''} key={label}><span><Icon /></span><strong>{label}</strong></div>)}
+        </div>
       </section>
     </div>
+    <section className="practice-roadmap panel">
+      <header><h2>4-week roadmap</h2><div><span>{completedDays} of 28 sessions complete</span><i><b style={{ width: `${completedDays / 28 * 100}%` }} /></i></div></header>
+      <div className="roadmap-weeks">
+        {PRACTICE_WEEKS.map((week, index) => <article className={activeWeek === index + 1 ? 'active' : ''} key={week.title}><div><span>{index + 1}</span><h3>Week {index + 1} · {week.title}</h3></div>{week.topics.map((topic) => <p key={topic}><i />{topic}</p>)}</article>)}
+      </div>
+    </section>
+    <section className="beginner-rules panel"><h2>Beginner rules</h2><div><span><Brain />Understand before optimizing</span><span><TrendingUp />Repeat missed problems</span><span><Code2 />Explain every solution aloud</span></div><button className="text-button" onClick={() => setPlanOpen((open) => !open)}>{planOpen ? 'Hide full plan' : 'View full plan'} <ArrowRight /></button></section>
+    {planOpen ? <section className="full-plan" aria-label="Full 28-day LeetCode plan">
+      {PRACTICE_WEEKS.map((week, weekIndex) => <div className="plan-week" key={week.title}><header><span>Week {weekIndex + 1}</span><h2>{week.title}</h2></header><div>{week.days.map((tasks, dayIndex) => { const day = weekIndex * 7 + dayIndex + 1; const done = tasks.every((_, taskIndex) => progress[`${day}-${taskIndex}`]); return <article className={done ? 'complete' : ''} key={day}><span>Day {day}</span><div><strong>{tasks[1]}</strong><p>{tasks[0]} · {tasks[2]}</p></div><span>{done ? <Check /> : '45–60 min'}</span></article> })}</div></div>)}
+    </section> : null}
   </section>
 }
 
@@ -447,7 +534,7 @@ export default function App() {
     overview: <Overview applications={applications} setPage={setPage} onEdit={openEdit} profile={profile} />,
     applications: <Applications applications={applications} onEdit={openEdit} onDelete={remove} />,
     pipeline: <Pipeline applications={applications} onEdit={openEdit} />,
-    insights: <Insights applications={applications} />,
+    practice: <Practice />,
   }
   return <AppShell page={page} setPage={setPage} onAdd={openAdd} onImport={importCsv} profile={profile} onSaveProfile={saveProfile}>
     {loading ? <div className="loading"><span /><p>Finding your north star…</p></div> : pages[page] || pages.overview}
