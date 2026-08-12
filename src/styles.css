@@ -72,7 +72,7 @@ main { margin-left: var(--sidebar); min-height: 100vh; }
 .text-button { color: #205bd4; background: none; border: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 7px; cursor: pointer; }
 .text-button svg { width: 14px; }
 
-.metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+.metrics-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
 .metric { min-height: 138px; padding: 27px; display: flex; align-items: center; gap: 16px; border-right: 1px solid var(--line); }
 .metric:last-child { border: 0; }
 .metric-icon { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; flex: 0 0 auto; }.metric-icon svg { width: 20px; height: 20px; }
@@ -162,7 +162,7 @@ main { margin-left: var(--sidebar); min-height: 100vh; }
 @media (max-width: 1100px) {
   :root { --sidebar: 225px; }
   .sidebar { padding-inline: 14px; }
-  .metrics-grid { grid-template-columns: repeat(2, 1fr); }.metric:nth-child(2) { border-right: 0; }.metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .metrics-grid { grid-template-columns: repeat(3, 1fr); }
   .overview-lower { grid-template-columns: 1fr; }
   .application-table { grid-template-columns: minmax(220px, 1.5fr) 90px 100px minmax(130px, 1fr) 70px; }.application-table > *:nth-child(5) { display: none; }.application-table > *:last-child { display: flex; }.table-head > *:last-child { display: block; }
   .practice-focus-grid { grid-template-columns: 1fr; }.roadmap-weeks { grid-template-columns: repeat(2, 1fr); }.roadmap-weeks article:nth-child(3) { border-left: 0; border-top: 1px dashed #d9dde6; }.roadmap-weeks article:nth-child(4) { border-top: 1px dashed #d9dde6; }.beginner-rules > div { gap: 14px; }
@@ -173,7 +173,7 @@ main { margin-left: var(--sidebar); min-height: 100vh; }
   .sidebar { transform: translateX(-102%); transition: transform .2s ease; box-shadow: 10px 0 40px rgba(15,24,45,.16); }.sidebar-open { transform: translateX(0); }.sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 15; border: 0; background: rgba(10,16,30,.35); }
   main { margin-left: 0; }.topbar { height: 66px; padding: 0 18px; border-bottom: 1px solid var(--line); justify-content: space-between; position: sticky; top: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); z-index: 10; }.mobile-menu.icon-button { display: grid; }.mobile-brand { display: block; font: 800 18px 'Manrope'; }.topbar .primary { font-size: 0; width: 37px; min-height: 37px; padding: 0; }.topbar .primary svg { margin: 0; }
   .page { padding: 25px 17px 40px; }.page-heading { align-items: flex-start; }.page-heading h1 { font-size: 29px; }.page-heading .outline { font-size: 0; width: 38px; padding: 0; }
-  .metrics-grid { grid-template-columns: 1fr 1fr; }.metric { min-height: 105px; padding: 16px 12px; gap: 9px; }.metric-icon { width: 32px; height: 32px; }.metric strong { font-size: 20px; }.metric div > span { display: block; margin: 3px 0 0; }.metric small { display: none; }
+  .metrics-grid { grid-template-columns: 1fr; }.metric { min-height: 88px; padding: 16px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--line); }.metric:last-child { border-bottom: 0; }.metric-icon { width: 36px; height: 36px; }.metric strong { font-size: 22px; }.metric div > span { margin-left: 7px; }.metric small { display: block; margin-top: 6px; }
   .panel-heading p { display: none; }.flow-panel .panel-heading .button { display: none; }.sankey-wrap { padding-inline: 9px; overflow-x: auto; }.sankey-wrap > svg { width: 780px; height: 240px; }.flow-legend { min-width: 680px; gap: 15px; }.flow-note { display: none; }
   .compact-row { grid-template-columns: 38px 1fr auto; min-height: 76px; }.compact-row > .company-mark { grid-row: 1 / 3; }.compact-primary { grid-column: 2; }.compact-row > .status { grid-column: 2; grid-row: 2; }.compact-row time { display: none; }.compact-menu-wrap { grid-column: 3; grid-row: 1 / 3; }.actions-panel .panel-heading { min-height: 64px; }
   .filters { align-items: stretch; flex-direction: column; }.search-field { width: 100%; }.status-tabs { width: 100%; }

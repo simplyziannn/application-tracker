@@ -200,7 +200,6 @@ function Overview({ applications, setPage, onEdit, profile }) {
   const [rowMenu, setRowMenu] = useState('')
   const interviews = applications.filter((item) => item.status === 'Interview').length
   const offers = applications.filter((item) => item.status === 'Offer').length
-  const responses = applications.filter((item) => !['Applied', 'Closed'].includes(item.status)).length
   const active = applications.filter((item) => item.status !== 'Closed').length
   const firstName = profile.firstName || 'there'
   const headlineCopy = interviews || offers
@@ -220,7 +219,6 @@ function Overview({ applications, setPage, onEdit, profile }) {
       <Metric icon={BriefcaseBusiness} value={active} label="active" note="Across all roles" accent="blue" />
       <Metric icon={CalendarDays} value={interviews} label="interviews" note="In progress" accent="purple" />
       <Metric icon={Sparkles} value={offers} label="offer" note="On the table" accent="coral" />
-      <Metric icon={TrendingUp} value={`${Math.round((responses / Math.max(1, applications.length)) * 100)}%`} label="response" note={`${responses} replies · ${applications.length} applied`} accent="green" />
     </div>
     <section className="panel flow-panel">
       <div className="panel-heading"><div><h2>Application flow</h2><p>Where your opportunities are moving—and where they stop.</p></div><div className="range-control"><button className="button subtle" onClick={() => setRangeOpen((open) => !open)} aria-expanded={rangeOpen}>{range} <ChevronDown /></button>{rangeOpen ? <div className="range-menu" role="menu">{['All time', 'Last 30 days', 'Last 90 days'].map((option) => <button role="menuitem" className={option === range ? 'selected' : ''} key={option} onClick={() => { setRange(option); setRangeOpen(false) }}>{option}{option === range ? <Check /> : null}</button>)}</div> : null}</div></div>
