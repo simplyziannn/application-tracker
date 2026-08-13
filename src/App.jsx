@@ -3,8 +3,8 @@ import { sankey, sankeyJustify, sankeyLinkHorizontal } from 'd3-sankey'
 import {
   ArrowRight, BookOpen, Brain, BriefcaseBusiness, CalendarDays, Check,
   ChevronDown, Clock3, Code2, Download,
-  LayoutDashboard, Menu, MoreHorizontal, Pencil, Plus, Search, Sparkles,
-  Target, Trash2, TrendingUp, Upload, UserRound, X,
+  LayoutDashboard, Menu, MoreHorizontal, Pencil, Plus, RefreshCw, Search, Sparkles,
+  Target, Trash2, Upload, UserRound, X,
 } from 'lucide-react'
 
 const NAV = [
@@ -297,49 +297,49 @@ const PRACTICE_WEEKS = [
   {
     title: 'Foundations', topics: ['Arrays & strings', 'Hash maps', 'Two pointers'],
     days: [
-      ['Array traversal', 'Two Sum', 'Write the pattern in your own words'],
-      ['String basics', 'Valid Anagram', 'Explain the frequency-map idea aloud'],
-      ['Hash maps', 'Contains Duplicate', 'Redo Two Sum without notes'],
-      ['Two pointers', 'Valid Palindrome', 'Name when two pointers are useful'],
-      ['In-place arrays', 'Move Zeroes', 'Trace every pointer movement'],
-      ['Review day', 'Redo two missed problems', 'Compare your first and second attempts'],
-      ['Light day', 'Read your pattern notes', 'Write one question for next week'],
+      ['Array traversal', 'Two Sum', 'Running Sum of 1d Array', 'Write the pattern in your own words'],
+      ['String basics', 'Valid Anagram', 'Valid Palindrome', 'Explain the frequency-map idea aloud'],
+      ['Hash maps', 'Contains Duplicate', 'Ransom Note', 'Redo the core lookup pattern without notes'],
+      ['Two pointers', 'Squares of a Sorted Array', 'Merge Sorted Array', 'Name when two pointers are useful'],
+      ['In-place arrays', 'Move Zeroes', 'Remove Duplicates from Sorted Array', 'Trace every pointer movement'],
+      ['Review day', 'Redo Two Sum', 'Redo Valid Anagram', 'Compare your first and second attempts'],
+      ['Light day', 'Best Time to Buy and Sell Stock', 'Majority Element', 'Write one question for next week'],
     ],
   },
   {
     title: 'Core patterns', topics: ['Sliding window', 'Stack', 'Binary search'],
     days: [
-      ['Sliding window', 'Best Time to Buy and Sell Stock', 'Draw the window on paper'],
-      ['Growing windows', 'Longest Substring Without Repeating Characters', 'Use hints, then explain each pointer'],
-      ['Stack basics', 'Valid Parentheses', 'Say why LIFO fits the problem'],
-      ['Stack state', 'Min Stack', 'Describe the extra-state tradeoff'],
-      ['Binary search', 'Binary Search', 'Write the loop invariants'],
-      ['Boundaries', 'Search Insert Position', 'Test empty and one-item cases'],
-      ['Review day', 'Solve two easy problems in 45 minutes', 'Log where you got stuck'],
+      ['Sliding window', 'Best Time to Buy and Sell Stock', 'Maximum Average Subarray I', 'Draw the window on paper'],
+      ['Growing windows', 'Longest Substring Without Repeating Characters', 'Minimum Size Subarray Sum', 'Use hints, then explain each pointer'],
+      ['Stack basics', 'Valid Parentheses', 'Baseball Game', 'Say why LIFO fits the problem'],
+      ['Stack state', 'Min Stack', 'Daily Temperatures', 'Describe the extra-state tradeoff'],
+      ['Binary search', 'Binary Search', 'Sqrt(x)', 'Write the loop invariants'],
+      ['Boundaries', 'Search Insert Position', 'First Bad Version', 'Test empty and one-item cases'],
+      ['Review day', 'Redo Longest Substring', 'Redo Valid Parentheses', 'Log where you got stuck'],
     ],
   },
   {
     title: 'Structures', topics: ['Linked lists', 'Trees', 'BFS & DFS'],
     days: [
-      ['Linked lists', 'Reverse Linked List', 'Draw prev, current, and next'],
-      ['List merging', 'Merge Two Sorted Lists', 'Explain the dummy-node pattern'],
-      ['Tree recursion', 'Maximum Depth of Binary Tree', 'State the base case first'],
-      ['Tree comparison', 'Same Tree', 'Trace one recursive call stack'],
-      ['Breadth-first search', 'Binary Tree Level Order Traversal', 'Explain why a queue fits'],
-      ['Depth-first search', 'Invert Binary Tree', 'Write recursive and iterative outlines'],
-      ['Review day', 'Redo one list and one tree problem', 'Draw both structures from memory'],
+      ['Linked lists', 'Reverse Linked List', 'Linked List Cycle', 'Draw prev, current, and next'],
+      ['List merging', 'Merge Two Sorted Lists', 'Remove Linked List Elements', 'Explain the dummy-node pattern'],
+      ['Tree recursion', 'Maximum Depth of Binary Tree', 'Minimum Depth of Binary Tree', 'State the base case first'],
+      ['Tree comparison', 'Same Tree', 'Symmetric Tree', 'Trace one recursive call stack'],
+      ['Breadth-first search', 'Binary Tree Level Order Traversal', 'Average of Levels in Binary Tree', 'Explain why a queue fits'],
+      ['Depth-first search', 'Invert Binary Tree', 'Path Sum', 'Write recursive and iterative outlines'],
+      ['Review day', 'Redo Reverse Linked List', 'Redo Maximum Depth', 'Draw both structures from memory'],
     ],
   },
   {
     title: 'Interview mode', topics: ['Mixed practice', 'Timed sets', 'Mock interviews'],
     days: [
-      ['Mixed set', 'Two Sum + Valid Palindrome', 'Finish in 45 minutes, then review'],
-      ['Mixed set', 'Best Time to Buy and Sell Stock + Valid Parentheses', 'Explain before coding'],
-      ['Mock interview', 'Two unseen easy problems', 'Use a strict 45-minute timer'],
-      ['Weak-spot day', 'Redo your two hardest misses', 'Update your pattern notes'],
-      ['Guided medium', 'Group Anagrams', 'Use hints only after 15 minutes'],
-      ['Full mock', 'One easy + one medium', 'Speak every decision aloud'],
-      ['Final benchmark', 'Redo Day 1 and one unseen problem', 'Choose next month’s three focus patterns'],
+      ['Mixed set', 'Two Sum', 'Valid Palindrome', 'Finish in 45 minutes, then review'],
+      ['Mixed set', 'Best Time to Buy and Sell Stock', 'Valid Parentheses', 'Explain before coding'],
+      ['Mock interview', 'Single Number', 'Flood Fill', 'Use a strict 45-minute timer'],
+      ['Weak-spot day', 'Redo your hardest array miss', 'Redo your hardest tree miss', 'Update your pattern notes'],
+      ['Guided medium', 'Group Anagrams', 'Top K Frequent Elements', 'Use hints only after 15 minutes'],
+      ['Full mock', 'Merge Two Sorted Lists', 'Product of Array Except Self', 'Speak every decision aloud'],
+      ['Final benchmark', 'Redo Two Sum', 'Number of Islands', 'Choose next month’s three focus patterns'],
     ],
   },
 ]
@@ -348,26 +348,52 @@ const PRACTICE_DAYS = PRACTICE_WEEKS.flatMap((week, weekIndex) => week.days.map(
   id: weekIndex * 7 + dayIndex + 1,
   week: weekIndex + 1,
   title: tasks[0],
-  tasks: [`Learn: ${tasks[0]}`, `Solve: ${tasks[1]}`, `Reflect: ${tasks[2]}`],
+  topic: tasks[0],
+  questions: [tasks[1], tasks[2]],
+  reflectionPrompt: tasks[3],
+  tasks: [`Learn: ${tasks[0]}`, `Solve: ${tasks[1]}`, `Solve: ${tasks[2]}`],
 })))
 
-function readPracticeProgress() {
-  try { return JSON.parse(window.localStorage.getItem('northstar-practice-v1') || '{}') }
-  catch { return {} }
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30]
+const toLocalIso = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const todayIso = () => toLocalIso(new Date())
+const addDays = (date, days) => {
+  const next = new Date(`${date}T12:00:00`)
+  next.setDate(next.getDate() + days)
+  return toLocalIso(next)
+}
+const isDayComplete = (day, progress) => day.tasks.every((_, index) => progress.checks?.[`${day.id}-${index}`])
+
+function readPracticeData() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem('northstar-practice-v2') || 'null')
+    if (saved) return { checks: {}, notes: {}, problems: [], ...saved }
+    const legacy = JSON.parse(window.localStorage.getItem('northstar-practice-v1') || '{}')
+    return { checks: legacy, notes: {}, problems: [] }
+  } catch { return { checks: {}, notes: {}, problems: [] } }
 }
 
 function Practice() {
-  const [progress, setProgress] = useState(readPracticeProgress)
+  const [progress, setProgress] = useState(readPracticeData)
   const [planOpen, setPlanOpen] = useState(false)
+  const [trackerOpen, setTrackerOpen] = useState(true)
+  const [addingProblem, setAddingProblem] = useState(false)
+  const [problemForm, setProblemForm] = useState({ title: '', topic: '', difficulty: 'Easy' })
   const [seconds, setSeconds] = useState(45 * 60)
   const [timerRunning, setTimerRunning] = useState(false)
-  const completedDays = PRACTICE_DAYS.filter((day) => day.tasks.every((_, index) => progress[`${day.id}-${index}`])).length
-  const currentDay = PRACTICE_DAYS.find((day) => !day.tasks.every((_, index) => progress[`${day.id}-${index}`])) || PRACTICE_DAYS.at(-1)
+  const completedDays = PRACTICE_DAYS.filter((day) => isDayComplete(day, progress)).length
+  const recommendedDay = PRACTICE_DAYS.find((day) => !isDayComplete(day, progress)) || PRACTICE_DAYS.at(-1)
+  const [selectedDayId, setSelectedDayId] = useState(() => {
+    const saved = readPracticeData()
+    return (PRACTICE_DAYS.find((day) => !isDayComplete(day, saved)) || PRACTICE_DAYS.at(-1)).id
+  })
+  const currentDay = PRACTICE_DAYS[selectedDayId - 1] || recommendedDay
   const graduation = new Date('2027-01-01T00:00:00+08:00')
   const daysToGraduation = Math.max(0, Math.ceil((graduation - Date.now()) / 86400000))
   const activeWeek = currentDay.week
+  const dueProblems = useMemo(() => progress.problems.filter((problem) => problem.nextReview <= todayIso()).sort((a, b) => a.nextReview.localeCompare(b.nextReview)), [progress.problems])
 
-  useEffect(() => { window.localStorage.setItem('northstar-practice-v1', JSON.stringify(progress)) }, [progress])
+  useEffect(() => { window.localStorage.setItem('northstar-practice-v2', JSON.stringify(progress)) }, [progress])
   useEffect(() => {
     if (!timerRunning) return undefined
     const timer = window.setInterval(() => setSeconds((value) => {
@@ -377,19 +403,48 @@ function Practice() {
     return () => window.clearInterval(timer)
   }, [timerRunning])
 
-  const toggleTask = (dayId, taskIndex) => setProgress((current) => ({ ...current, [`${dayId}-${taskIndex}`]: !current[`${dayId}-${taskIndex}`] }))
+  const addTrackedProblem = (title, topic, difficulty = 'Easy') => setProgress((current) => {
+    const duplicate = current.problems.some((problem) => problem.title.toLowerCase() === title.toLowerCase())
+    if (duplicate) return current
+    const solvedAt = todayIso()
+    return { ...current, problems: [{ id: crypto.randomUUID(), title, topic, difficulty, solvedAt, nextReview: addDays(solvedAt, 1), intervalIndex: 0, reviews: 0 }, ...current.problems] }
+  })
+  const toggleTask = (day, taskIndex) => {
+    const key = `${day.id}-${taskIndex}`
+    const willComplete = !progress.checks[key]
+    setProgress((current) => ({ ...current, checks: { ...current.checks, [key]: !current.checks[key] } }))
+    if (willComplete && taskIndex > 0) addTrackedProblem(day.questions[taskIndex - 1], day.topic)
+  }
+  const updateNote = (value) => setProgress((current) => ({ ...current, notes: { ...current.notes, [currentDay.id]: value } }))
+  const submitProblem = (event) => {
+    event.preventDefault()
+    if (!problemForm.title.trim()) return
+    addTrackedProblem(problemForm.title.trim(), problemForm.topic.trim() || 'Mixed practice', problemForm.difficulty)
+    setProblemForm({ title: '', topic: '', difficulty: 'Easy' })
+    setAddingProblem(false)
+  }
+  const reviewProblem = (id, result) => setProgress((current) => ({
+    ...current,
+    problems: current.problems.map((problem) => {
+      if (problem.id !== id) return problem
+      const intervalIndex = result === 'again' ? 0 : Math.min(problem.intervalIndex + 1, REVIEW_INTERVALS.length - 1)
+      return { ...problem, intervalIndex, reviews: problem.reviews + 1, lastResult: result, lastReviewed: todayIso(), nextReview: addDays(todayIso(), REVIEW_INTERVALS[intervalIndex]) }
+    }),
+  }))
+  const removeProblem = (id) => setProgress((current) => ({ ...current, problems: current.problems.filter((problem) => problem.id !== id) }))
   const timerLabel = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 
   return <section className="page practice-page">
     <PageHeading title="Build interview confidence." copy="A beginner-friendly plan that turns practice into patterns you can recognize." />
     <div className="practice-focus-grid">
       <section className="practice-today panel">
-        <div className="practice-today-copy"><span>Today · Day {currentDay.id}</span><h2>{currentDay.id === 1 ? 'Start with arrays, not pressure.' : currentDay.title}</h2><p>Small steps today build the confidence you’ll rely on tomorrow.</p></div>
+        <div className="practice-today-copy"><div className="day-title-row"><span>{currentDay.id === recommendedDay.id ? 'Today' : 'Editing'} · Day {currentDay.id}</span><div className="day-switcher"><button className="icon-button" disabled={currentDay.id === 1} onClick={() => setSelectedDayId((day) => Math.max(1, day - 1))} aria-label="Previous day"><ArrowRight /></button><select aria-label="Choose practice day" value={currentDay.id} onChange={(event) => setSelectedDayId(Number(event.target.value))}>{PRACTICE_DAYS.map((day) => <option value={day.id} key={day.id}>Day {day.id}{isDayComplete(day, progress) ? ' ✓' : ''}</option>)}</select><button className="icon-button" disabled={currentDay.id === 28} onClick={() => setSelectedDayId((day) => Math.min(28, day + 1))} aria-label="Next day"><ArrowRight /></button></div></div><h2>{currentDay.id === 1 ? 'Start with arrays, not pressure.' : currentDay.title}</h2><p>Two focused problems today, followed by a short reflection.</p></div>
         <div className="today-tasks">
-          {currentDay.tasks.map((task, index) => <label className={progress[`${currentDay.id}-${index}`] ? 'complete' : ''} key={task}>
-            <input type="checkbox" checked={Boolean(progress[`${currentDay.id}-${index}`])} onChange={() => toggleTask(currentDay.id, index)} /><span className="task-check"><Check /></span><span>{task}</span><ChevronDown />
+          {currentDay.tasks.map((task, index) => <label className={progress.checks[`${currentDay.id}-${index}`] ? 'complete' : ''} key={task}>
+            <input type="checkbox" checked={Boolean(progress.checks[`${currentDay.id}-${index}`])} onChange={() => toggleTask(currentDay, index)} /><span className="task-check"><Check /></span><span>{task}</span><ChevronDown />
           </label>)}
         </div>
+        <label className="reflection-field"><span><Brain /> Reflect · {currentDay.reflectionPrompt}</span><textarea value={progress.notes[currentDay.id] || ''} onChange={(event) => updateNote(event.target.value)} placeholder="What clicked? Where did you get stuck? What will you try next time?" /><small>{progress.notes[currentDay.id] ? 'Saved automatically — return to any day to review or edit.' : 'Your note saves automatically.'}</small></label>
         <footer><span><Clock3 /> {timerRunning || seconds < 45 * 60 ? timerLabel : '45–60 min'}</span><button className="button primary" onClick={() => { if (seconds === 0) setSeconds(45 * 60); setTimerRunning((running) => !running) }}>{timerRunning ? 'Pause session' : seconds < 45 * 60 && seconds > 0 ? 'Continue session' : "Start today's session"}</button></footer>
       </section>
       <section className="graduation-panel panel">
@@ -400,15 +455,22 @@ function Practice() {
       </section>
     </div>
     <section className="practice-roadmap panel">
-      <header><h2>4-week roadmap</h2><div><span>{completedDays} of 28 sessions complete</span><i><b style={{ width: `${completedDays / 28 * 100}%` }} /></i></div></header>
+      <header><h2>4-week roadmap</h2><div className="roadmap-header-actions"><div className="roadmap-progress"><span>{completedDays} of 28 sessions complete</span><i><b style={{ width: `${completedDays / 28 * 100}%` }} /></i></div><button className="text-button" onClick={() => setPlanOpen((open) => !open)} aria-expanded={planOpen}>{planOpen ? 'Hide full plan' : 'View full plan'} <ArrowRight /></button></div></header>
       <div className="roadmap-weeks">
         {PRACTICE_WEEKS.map((week, index) => <article className={activeWeek === index + 1 ? 'active' : ''} key={week.title}><div><span>{index + 1}</span><h3>Week {index + 1} · {week.title}</h3></div>{week.topics.map((topic) => <p key={topic}><i />{topic}</p>)}</article>)}
       </div>
     </section>
-    <section className="beginner-rules panel"><h2>Beginner rules</h2><div><span><Brain />Understand before optimizing</span><span><TrendingUp />Repeat missed problems</span><span><Code2 />Explain every solution aloud</span></div><button className="text-button" onClick={() => setPlanOpen((open) => !open)}>{planOpen ? 'Hide full plan' : 'View full plan'} <ArrowRight /></button></section>
     {planOpen ? <section className="full-plan" aria-label="Full 28-day LeetCode plan">
-      {PRACTICE_WEEKS.map((week, weekIndex) => <div className="plan-week" key={week.title}><header><span>Week {weekIndex + 1}</span><h2>{week.title}</h2></header><div>{week.days.map((tasks, dayIndex) => { const day = weekIndex * 7 + dayIndex + 1; const done = tasks.every((_, taskIndex) => progress[`${day}-${taskIndex}`]); return <article className={done ? 'complete' : ''} key={day}><span>Day {day}</span><div><strong>{tasks[1]}</strong><p>{tasks[0]} · {tasks[2]}</p></div><span>{done ? <Check /> : '45–60 min'}</span></article> })}</div></div>)}
+      {PRACTICE_WEEKS.map((week, weekIndex) => <div className="plan-week" key={week.title}><header><span>Week {weekIndex + 1}</span><h2>{week.title}</h2></header><div>{week.days.map((tasks, dayIndex) => { const day = weekIndex * 7 + dayIndex + 1; const planDay = PRACTICE_DAYS[day - 1]; const done = isDayComplete(planDay, progress); return <button className={done ? 'complete' : ''} key={day} onClick={() => { setSelectedDayId(day); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><span>Day {day}</span><div><strong>{tasks[1]} + {tasks[2]}</strong><p>{tasks[0]} · {progress.notes[day] ? 'Reflection saved' : tasks[3]}</p></div><span>{done ? <Check /> : 'Edit day'}</span></button> })}</div></div>)}
     </section> : null}
+    <section className="mastery-panel panel">
+      <header><div><h2>Mastery tracker</h2><p>Problems return on a 1, 3, 7, 14, then 30-day review rhythm.</p></div><div><span className={dueProblems.length ? 'due-count has-due' : 'due-count'}>{dueProblems.length} due today</span><button className="button outline" onClick={() => setAddingProblem((open) => !open)}><Plus /> Add problem</button><button className="text-button" onClick={() => setTrackerOpen((open) => !open)}>{trackerOpen ? 'Hide' : 'Show'} <ChevronDown /></button></div></header>
+      {addingProblem ? <form className="problem-form" onSubmit={submitProblem}><label>Problem name<input autoFocus value={problemForm.title} onChange={(event) => setProblemForm((form) => ({ ...form, title: event.target.value }))} placeholder="e.g. Two Sum" /></label><label>Topic<input value={problemForm.topic} onChange={(event) => setProblemForm((form) => ({ ...form, topic: event.target.value }))} placeholder="e.g. Hash maps" /></label><label>Difficulty<select value={problemForm.difficulty} onChange={(event) => setProblemForm((form) => ({ ...form, difficulty: event.target.value }))}><option>Easy</option><option>Medium</option><option>Hard</option></select></label><button className="button primary">Track problem</button></form> : null}
+      {trackerOpen ? <div className="mastery-content">
+        <section className="review-queue"><div className="tracker-heading"><h3>Review queue</h3><span>Be honest—struggle is useful data.</span></div>{dueProblems.length ? dueProblems.map((problem) => <article className="review-card" key={problem.id}><div><span className={`difficulty difficulty-${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span><h4>{problem.title}</h4><p>{problem.topic} · reviewed {problem.reviews} time{problem.reviews === 1 ? '' : 's'}</p></div><div className="review-actions"><button onClick={() => reviewProblem(problem.id, 'again')}><RefreshCw /> Again</button><button onClick={() => reviewProblem(problem.id, 'good')}><Check /> Got it</button></div></article>) : <div className="tracker-empty"><Check /><strong>Review queue clear</strong><span>Your next scheduled problem will appear here.</span></div>}</section>
+        <section className="problem-library"><div className="tracker-heading"><h3>Problem library</h3><span>{progress.problems.length} tracked</span></div><div className="problem-list">{progress.problems.map((problem) => <article key={problem.id}><div><strong>{problem.title}</strong><span>{problem.topic} · {problem.difficulty}</span></div><div><time>Review {formatDate(problem.nextReview, true)}</time><button className="icon-button danger" onClick={() => removeProblem(problem.id)} aria-label={`Remove ${problem.title}`}><Trash2 /></button></div></article>)}{!progress.problems.length ? <div className="tracker-empty compact"><Code2 /><strong>No problems tracked yet</strong><span>Complete a daily problem or add one yourself.</span></div> : null}</div></section>
+      </div> : null}
+    </section>
   </section>
 }
 
