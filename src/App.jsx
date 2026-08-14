@@ -61,6 +61,8 @@ const formatDate = (date, short = false) => {
   return new Intl.DateTimeFormat('en-SG', { month: 'short', day: 'numeric', ...(short ? {} : { year: 'numeric' }) }).format(new Date(`${date}T00:00:00`))
 }
 
+const byAppliedDateDescending = (a, b) => (b.appliedDate || '').localeCompare(a.appliedDate || '')
+
 function Status({ value }) {
   return <span className={`status status-${STATUS_CLASS[value] || 'applied'}`}><span />{value}</span>
 }
@@ -206,6 +208,7 @@ function Overview({ applications, setPage, onEdit, profile }) {
     ? `${firstName}, ${interviews} interview${interviews === 1 ? '' : 's'} and ${offers} offer${offers === 1 ? '' : 's'} are in motion.`
     : `${firstName}, ${active} active application${active === 1 ? '' : 's'} are on the board.`
   const upcoming = [...applications].filter((item) => item.nextDate && item.status !== 'Closed').sort((a, b) => a.nextDate.localeCompare(b.nextDate)).slice(0, 5)
+  const recentApplications = useMemo(() => [...applications].sort(byAppliedDateDescending).slice(0, 5), [applications])
   const flowApplications = useMemo(() => {
     if (range === 'All time') return applications
     const days = range === 'Last 30 days' ? 30 : 90
@@ -228,7 +231,7 @@ function Overview({ applications, setPage, onEdit, profile }) {
       <section className="panel recent-panel">
         <div className="panel-heading"><h2>Recent applications</h2><button className="text-button" onClick={() => setPage('applications')}>View all <ArrowRight /></button></div>
         <div className="compact-list">
-          {applications.slice(0, 5).map((item) => <div className="compact-row" key={item.id}><CompanyMark company={item.company}/><div className="compact-primary"><strong>{item.company}</strong><span>{item.role}</span></div><Status value={item.status}/><time>{formatDate(item.appliedDate, true)}</time><div className="compact-menu-wrap"><button className="row-menu-button" onClick={() => setRowMenu((open) => open === item.id ? '' : item.id)} aria-label={`Actions for ${item.company}`} aria-expanded={rowMenu === item.id}><MoreHorizontal /></button>{rowMenu === item.id ? <div className="compact-menu" role="menu"><button role="menuitem" onClick={() => { onEdit(item); setRowMenu('') }}><Pencil /> Edit application</button><button role="menuitem" onClick={() => { setRowMenu(''); setPage('pipeline') }}><Target /> View in pipeline</button></div> : null}</div></div>)}
+          {recentApplications.map((item) => <div className="compact-row" key={item.id}><CompanyMark company={item.company}/><div className="compact-primary"><strong>{item.company}</strong><span>{item.role}</span></div><Status value={item.status}/><time>{formatDate(item.appliedDate, true)}</time><div className="compact-menu-wrap"><button className="row-menu-button" onClick={() => setRowMenu((open) => open === item.id ? '' : item.id)} aria-label={`Actions for ${item.company}`} aria-expanded={rowMenu === item.id}><MoreHorizontal /></button>{rowMenu === item.id ? <div className="compact-menu" role="menu"><button role="menuitem" onClick={() => { onEdit(item); setRowMenu('') }}><Pencil /> Edit application</button><button role="menuitem" onClick={() => { setRowMenu(''); setPage('pipeline') }}><Target /> View in pipeline</button></div> : null}</div></div>)}
         </div>
       </section>
       <section className="panel actions-panel">
@@ -245,11 +248,13 @@ function Applications({ applications, onEdit, onDelete }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const deferredSearch = useDeferredValue(search)
-  const filtered = useMemo(() => applications.filter((item) => {
-    const matchesStatus = status === 'All' || item.status === status
-    const haystack = `${item.company} ${item.role} ${item.location}`.toLowerCase()
-    return matchesStatus && haystack.includes(deferredSearch.toLowerCase())
-  }), [applications, deferredSearch, status])
+  const filtered = useMemo(() => applications
+    .filter((item) => {
+      const matchesStatus = status === 'All' || item.status === status
+      const haystack = `${item.company} ${item.role} ${item.location}`.toLowerCase()
+      return matchesStatus && haystack.includes(deferredSearch.toLowerCase())
+    })
+    .sort(byAppliedDateDescending), [applications, deferredSearch, status])
   return <section className="page applications-page">
     <PageHeading kicker={`${applications.length} tracked`} title="Applications" copy="Every opportunity, with the context you need." action={<a className="button outline" href="/api/export"><Download /> Export CSV</a>} />
     <div className="filters">
