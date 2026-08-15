@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite --host 0.0.0.0\"",
     "build": "vite build",
+    "test:review": "node --test test/reviewRecommendations.test.mjs",
     "test:extension": "node extension/test-extractor.mjs",
     "start": "node server.js",
     "preview": "vite preview"

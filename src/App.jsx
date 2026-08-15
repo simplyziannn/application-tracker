@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Menu, MoreHorizontal, Pencil, Plus, RefreshCw, Search, Sparkles,
   Target, Trash2, Upload, UserRound, X,
 } from 'lucide-react'
+import { createQuestionPlan, DAILY_REVIEW_LIMIT, recommendReviews, REVIEW_INTERVALS } from './reviewRecommendations.js'
 
 const NAV = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -359,7 +360,6 @@ const PRACTICE_DAYS = PRACTICE_WEEKS.flatMap((week, weekIndex) => week.days.map(
   tasks: [`Learn: ${tasks[0]}`, `Solve: ${tasks[1]}`, `Solve: ${tasks[2]}`],
 })))
 
-const REVIEW_INTERVALS = [1, 3, 7, 14, 30]
 const toLocalIso = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 const todayIso = () => toLocalIso(new Date())
 const addDays = (date, days) => {
@@ -368,6 +368,7 @@ const addDays = (date, days) => {
   return toLocalIso(next)
 }
 const isDayComplete = (day, progress) => day.tasks.every((_, index) => progress.checks?.[`${day.id}-${index}`])
+const ROADMAP_QUESTION_PLAN = createQuestionPlan(PRACTICE_DAYS)
 
 function readPracticeData() {
   try {
@@ -397,6 +398,9 @@ function Practice() {
   const daysToGraduation = Math.max(0, Math.ceil((graduation - Date.now()) / 86400000))
   const activeWeek = currentDay.week
   const dueProblems = useMemo(() => progress.problems.filter((problem) => problem.nextReview <= todayIso()).sort((a, b) => a.nextReview.localeCompare(b.nextReview)), [progress.problems])
+  const recommendedReviews = useMemo(() => recommendReviews(dueProblems, recommendedDay.id, ROADMAP_QUESTION_PLAN, todayIso()), [dueProblems, recommendedDay.id])
+  const recommendedReviewIds = useMemo(() => new Set(recommendedReviews.map(({ problem }) => problem.id)), [recommendedReviews])
+  const waitingReviewCount = dueProblems.length - recommendedReviews.length
 
   useEffect(() => { window.localStorage.setItem('northstar-practice-v2', JSON.stringify(progress)) }, [progress])
   useEffect(() => {
@@ -412,7 +416,7 @@ function Practice() {
     const duplicate = current.problems.some((problem) => problem.title.toLowerCase() === title.toLowerCase())
     if (duplicate) return current
     const solvedAt = todayIso()
-    return { ...current, problems: [{ id: crypto.randomUUID(), title, topic, difficulty, solvedAt, nextReview: addDays(solvedAt, 1), intervalIndex: 0, reviews: 0 }, ...current.problems] }
+    return { ...current, problems: [{ id: crypto.randomUUID(), title, topic, difficulty, solvedAt, nextReview: addDays(solvedAt, REVIEW_INTERVALS[0]), intervalIndex: 0, reviews: 0 }, ...current.problems] }
   })
   const toggleTask = (day, taskIndex) => {
     const key = `${day.id}-${taskIndex}`
@@ -433,7 +437,8 @@ function Practice() {
     problems: current.problems.map((problem) => {
       if (problem.id !== id) return problem
       const intervalIndex = result === 'again' ? 0 : Math.min(problem.intervalIndex + 1, REVIEW_INTERVALS.length - 1)
-      return { ...problem, intervalIndex, reviews: problem.reviews + 1, lastResult: result, lastReviewed: todayIso(), nextReview: addDays(todayIso(), REVIEW_INTERVALS[intervalIndex]) }
+      const daysUntilNextReview = result === 'again' ? 1 : REVIEW_INTERVALS[intervalIndex]
+      return { ...problem, intervalIndex, reviews: problem.reviews + 1, lastResult: result, lastReviewed: todayIso(), nextReview: addDays(todayIso(), daysUntilNextReview) }
     }),
   }))
   const removeProblem = (id) => setProgress((current) => ({ ...current, problems: current.problems.filter((problem) => problem.id !== id) }))
@@ -469,11 +474,11 @@ function Practice() {
       {PRACTICE_WEEKS.map((week, weekIndex) => <div className="plan-week" key={week.title}><header><span>Week {weekIndex + 1}</span><h2>{week.title}</h2></header><div>{week.days.map((tasks, dayIndex) => { const day = weekIndex * 7 + dayIndex + 1; const planDay = PRACTICE_DAYS[day - 1]; const done = isDayComplete(planDay, progress); return <button className={done ? 'complete' : ''} key={day} onClick={() => { setSelectedDayId(day); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><span>Day {day}</span><div><strong>{tasks[1]} + {tasks[2]}</strong><p>{tasks[0]} · {progress.notes[day] ? 'Reflection saved' : tasks[3]}</p></div><span>{done ? <Check /> : 'Edit day'}</span></button> })}</div></div>)}
     </section> : null}
     <section className="mastery-panel panel">
-      <header><div><h2>Mastery tracker</h2><p>Problems return on a 1, 3, 7, 14, then 30-day review rhythm.</p></div><div><span className={dueProblems.length ? 'due-count has-due' : 'due-count'}>{dueProblems.length} due today</span><button className="button outline" onClick={() => setAddingProblem((open) => !open)}><Plus /> Add problem</button><button className="text-button" onClick={() => setTrackerOpen((open) => !open)}>{trackerOpen ? 'Hide' : 'Show'} <ChevronDown /></button></div></header>
+      <header><div><h2>Mastery tracker</h2><p>Northstar picks up to {DAILY_REVIEW_LIMIT} useful reviews. New problems return after 3 days; misses return tomorrow.</p></div><div><span className={recommendedReviews.length ? 'due-count has-due' : 'due-count'}>{recommendedReviews.length} recommended{waitingReviewCount ? ` · ${waitingReviewCount} waiting` : ''}</span><button className="button outline" onClick={() => setAddingProblem((open) => !open)}><Plus /> Add problem</button><button className="text-button" onClick={() => setTrackerOpen((open) => !open)}>{trackerOpen ? 'Hide' : 'Show'} <ChevronDown /></button></div></header>
       {addingProblem ? <form className="problem-form" onSubmit={submitProblem}><label>Problem name<input autoFocus value={problemForm.title} onChange={(event) => setProblemForm((form) => ({ ...form, title: event.target.value }))} placeholder="e.g. Two Sum" /></label><label>Topic<input value={problemForm.topic} onChange={(event) => setProblemForm((form) => ({ ...form, topic: event.target.value }))} placeholder="e.g. Hash maps" /></label><label>Difficulty<select value={problemForm.difficulty} onChange={(event) => setProblemForm((form) => ({ ...form, difficulty: event.target.value }))}><option>Easy</option><option>Medium</option><option>Hard</option></select></label><button className="button primary">Track problem</button></form> : null}
       {trackerOpen ? <div className="mastery-content">
-        <section className="review-queue"><div className="tracker-heading"><h3>Review queue</h3><span>Be honest—struggle is useful data.</span></div>{dueProblems.length ? dueProblems.map((problem) => <article className="review-card" key={problem.id}><div><span className={`difficulty difficulty-${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span><h4>{problem.title}</h4><p>{problem.topic} · reviewed {problem.reviews} time{problem.reviews === 1 ? '' : 's'}</p></div><div className="review-actions"><button onClick={() => reviewProblem(problem.id, 'again')}><RefreshCw /> Again</button><button onClick={() => reviewProblem(problem.id, 'good')}><Check /> Got it</button></div></article>) : <div className="tracker-empty"><Check /><strong>Review queue clear</strong><span>Your next scheduled problem will appear here.</span></div>}</section>
-        <section className="problem-library"><div className="tracker-heading"><h3>Problem library</h3><span>{progress.problems.length} tracked</span></div><div className="problem-list">{progress.problems.map((problem) => <article key={problem.id}><div><strong>{problem.title}</strong><span>{problem.topic} · {problem.difficulty}</span></div><div><time>Review {formatDate(problem.nextReview, true)}</time><button className="icon-button danger" onClick={() => removeProblem(problem.id)} aria-label={`Remove ${problem.title}`}><Trash2 /></button></div></article>)}{!progress.problems.length ? <div className="tracker-empty compact"><Code2 /><strong>No problems tracked yet</strong><span>Complete a daily problem or add one yourself.</span></div> : null}</div></section>
+        <section className="review-queue"><div className="tracker-heading"><h3>Today’s smart picks</h3><span>Priority beats clearing a backlog.</span></div>{recommendedReviews.length ? recommendedReviews.map(({ problem, reason }) => <article className="review-card" key={problem.id}><div><div className="review-card-labels"><span className={`difficulty difficulty-${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span><span className="review-reason"><Sparkles /> {reason}</span></div><h4>{problem.title}</h4><p>{problem.topic} · reviewed {problem.reviews} time{problem.reviews === 1 ? '' : 's'}</p></div><div className="review-actions"><button onClick={() => reviewProblem(problem.id, 'again')}><RefreshCw /> Again</button><button onClick={() => reviewProblem(problem.id, 'good')}><Check /> Got it</button></div></article>) : <div className="tracker-empty"><Check /><strong>You’re caught up</strong><span>No useful reviews are scheduled for today.</span></div>}</section>
+        <section className="problem-library"><div className="tracker-heading"><h3>Problem library</h3><span>{progress.problems.length} tracked</span></div><div className="problem-list">{progress.problems.map((problem) => <article key={problem.id}><div><strong>{problem.title}</strong><span>{problem.topic} · {problem.difficulty}</span></div><div><time>{recommendedReviewIds.has(problem.id) ? 'Recommended today' : problem.nextReview <= todayIso() ? 'Waiting in review pool' : `Review ${formatDate(problem.nextReview, true)}`}</time><button className="icon-button danger" onClick={() => removeProblem(problem.id)} aria-label={`Remove ${problem.title}`}><Trash2 /></button></div></article>)}{!progress.problems.length ? <div className="tracker-empty compact"><Code2 /><strong>No problems tracked yet</strong><span>Complete a daily problem or add one yourself.</span></div> : null}</div></section>
       </div> : null}
     </section>
   </section>
