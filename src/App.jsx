@@ -70,8 +70,9 @@ function Status({ value }) {
 
 function CompanyMark({ company }) {
   const palette = ['#2456d8', '#ff5a36', '#6d4aff', '#079c70', '#d94267']
-  const index = company.split('').reduce((total, char) => total + char.charCodeAt(0), 0) % palette.length
-  return <span className="company-mark" style={{ '--mark': palette[index] }}>{company.slice(0, 1)}</span>
+  const normalizedCompany = company.trim()
+  const index = normalizedCompany.split('').reduce((total, char) => total + char.charCodeAt(0), 0) % palette.length
+  return <span className="company-mark" style={{ '--mark': palette[index] }}>{normalizedCompany.slice(0, 1).toUpperCase() || '?'}</span>
 }
 
 const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'NS'
