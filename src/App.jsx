@@ -150,7 +150,6 @@ function Sankey({ applications }) {
       { id: 'screening', label: 'Screening', color: '#e1a11f' },
       { id: 'screening-now', label: 'In screening', color: '#e1a11f' },
       { id: 'interview', label: 'Interview', color: '#7658e5' },
-      { id: 'interview-now', label: 'In interview', color: '#7658e5' },
       { id: 'offer', label: 'Offer', color: '#0b9a70' },
       { id: 'closed', label: 'Closed', color: '#ea4a4a' },
     ]
@@ -160,7 +159,6 @@ function Sankey({ applications }) {
       { source: 'applications', target: 'closed', value: counts.Closed, color: '#ef8d83' },
       { source: 'screening', target: 'screening-now', value: counts.Screening, color: '#e8b84f' },
       { source: 'screening', target: 'interview', value: interviewFlow, color: '#8270da' },
-      { source: 'interview', target: 'interview-now', value: counts.Interview, color: '#8976e3' },
       { source: 'interview', target: 'offer', value: counts.Offer, color: '#42ad8b' },
     ].filter((link) => link.value > 0)
     return sankey()
