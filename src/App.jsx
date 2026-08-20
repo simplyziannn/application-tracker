@@ -55,11 +55,43 @@ const api = {
     if (!response.ok) throw new Error((await response.json()).error || 'Could not save profile')
     return response.json()
   },
+  async getPractice() {
+    const response = await fetch('/api/practice')
+    if (!response.ok) throw new Error('Could not load practice progress')
+    return response.json()
+  },
+  async savePractice(progress) {
+    const response = await fetch('/api/practice', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(progress),
+    })
+    if (!response.ok) throw new Error((await response.json()).error || 'Could not save practice progress')
+    return response.json()
+  },
+  async listActions(applicationId) {
+    const response = await fetch(`/api/applications/${applicationId}/actions`)
+    if (!response.ok) throw new Error('Could not load action history')
+    return response.json()
+  },
+  async completeAction(applicationId, action, dueDate) {
+    const response = await fetch(`/api/applications/${applicationId}/actions/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, dueDate }),
+    })
+    if (!response.ok) throw new Error((await response.json()).error || 'Could not complete action')
+    return response.json()
+  },
 }
 
 const formatDate = (date, short = false) => {
   if (!date) return '—'
   return new Intl.DateTimeFormat('en-SG', { month: 'short', day: 'numeric', ...(short ? {} : { year: 'numeric' }) }).format(new Date(`${date}T00:00:00`))
+}
+
+const formatDateTime = (value) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('en-SG', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
 const byAppliedDateDescending = (a, b) => (b.appliedDate || '').localeCompare(a.appliedDate || '')
@@ -196,7 +228,7 @@ function PageHeading({ title, copy, kicker, action }) {
   return <div className="page-heading"><div>{kicker ? <span className="page-kicker">{kicker}</span> : null}<h1>{title}</h1><p>{copy}</p></div>{action}</div>
 }
 
-function Overview({ applications, setPage, onEdit, profile }) {
+function Overview({ applications, setPage, onEdit, onAction, profile }) {
   const [range, setRange] = useState('All time')
   const [rangeOpen, setRangeOpen] = useState(false)
   const [rowMenu, setRowMenu] = useState('')
@@ -237,14 +269,15 @@ function Overview({ applications, setPage, onEdit, profile }) {
       <section className="panel actions-panel">
         <div className="panel-heading"><h2>Upcoming actions</h2><button className="text-button" onClick={() => setPage('pipeline')}>Pipeline <ArrowRight /></button></div>
         <div className="action-list">
-          {upcoming.map((item) => <div className="action-row" key={item.id}><span className="action-icon"><CalendarDays /></span><div><strong>{item.nextStep || 'Follow up'}</strong><span>{item.company} · {item.role}</span></div><time>{formatDate(item.nextDate, true)}</time></div>)}
+          {upcoming.map((item) => <button className="action-row" key={item.id} onClick={() => onAction(item)} aria-label={`Open upcoming action ${item.nextStep} for ${item.company}`}><span className="action-icon"><CalendarDays /></span><span className="action-row-copy"><strong>{item.nextStep || 'Follow up'}</strong><span>{item.company} · {item.role}</span></span><time>{formatDate(item.nextDate, true)}</time><ArrowRight className="action-row-arrow" /></button>)}
+          {!upcoming.length ? <div className="action-empty"><Check /><strong>No upcoming actions</strong><span>Add a next step to an application to see it here.</span></div> : null}
         </div>
       </section>
     </div>
   </section>
 }
 
-function Applications({ applications, onEdit, onDelete }) {
+function Applications({ applications, onEdit, onDelete, onHistory }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const deferredSearch = useDeferredValue(search)
@@ -267,7 +300,7 @@ function Applications({ applications, onEdit, onDelete }) {
         {filtered.map((item) => <article className="application-table table-row" key={item.id}>
           <div className="company-cell"><CompanyMark company={item.company}/><div><strong>{item.company}</strong><span>{item.role} · {item.location}</span></div></div>
           <Status value={item.status}/><time>{formatDate(item.appliedDate)}</time><div className="next-cell"><strong>{item.nextStep || 'No next step'}</strong><span>{formatDate(item.nextDate)}</span></div><span>{item.type}</span>
-          <div className="row-actions"><button className="icon-button" onClick={() => onEdit(item)} title="Edit"><Pencil /></button><button className="icon-button danger" onClick={() => onDelete(item)} title="Delete"><Trash2 /></button></div>
+          <div className="row-actions"><button className="icon-button" onClick={() => onHistory(item)} title="Action history" aria-label={`View action history for ${item.company}`}><Clock3 /></button><button className="icon-button" onClick={() => onEdit(item)} title="Edit"><Pencil /></button><button className="icon-button danger" onClick={() => onDelete(item)} title="Delete"><Trash2 /></button></div>
         </article>)}
         {!filtered.length ? <div className="empty-state"><Search /><h3>No applications found</h3><p>Try a different search or status.</p></div> : null}
       </div>
@@ -369,17 +402,35 @@ const addDays = (date, days) => {
 const isDayComplete = (day, progress) => day.tasks.every((_, index) => progress.checks?.[`${day.id}-${index}`])
 const ROADMAP_QUESTION_PLAN = createQuestionPlan(PRACTICE_DAYS)
 
-function readPracticeData() {
+const EMPTY_PRACTICE = { checks: {}, notes: {}, problems: [] }
+const normalizePracticeData = (value) => {
+  const data = value && typeof value === 'object' ? value : {}
+  return {
+    checks: data.checks && typeof data.checks === 'object' && !Array.isArray(data.checks) ? data.checks : {},
+    notes: data.notes && typeof data.notes === 'object' && !Array.isArray(data.notes) ? data.notes : {},
+    problems: Array.isArray(data.problems) ? data.problems : [],
+  }
+}
+
+const hasPracticeData = (data) => Boolean(
+  Object.keys(data?.checks || {}).length
+  || Object.keys(data?.notes || {}).length
+  || data?.problems?.length,
+)
+
+function readLocalPracticeData() {
   try {
     const saved = JSON.parse(window.localStorage.getItem('northstar-practice-v2') || 'null')
-    if (saved) return { checks: {}, notes: {}, problems: [], ...saved }
+    if (saved) return normalizePracticeData(saved)
     const legacy = JSON.parse(window.localStorage.getItem('northstar-practice-v1') || '{}')
-    return { checks: legacy, notes: {}, problems: [] }
-  } catch { return { checks: {}, notes: {}, problems: [] } }
+    return normalizePracticeData({ checks: legacy })
+  } catch { return null }
 }
 
 function Practice() {
-  const [progress, setProgress] = useState(readPracticeData)
+  const [progress, setProgress] = useState(EMPTY_PRACTICE)
+  const [practiceReady, setPracticeReady] = useState(false)
+  const [syncState, setSyncState] = useState('loading')
   const [planOpen, setPlanOpen] = useState(false)
   const [trackerOpen, setTrackerOpen] = useState(true)
   const [addingProblem, setAddingProblem] = useState(false)
@@ -389,7 +440,7 @@ function Practice() {
   const completedDays = PRACTICE_DAYS.filter((day) => isDayComplete(day, progress)).length
   const recommendedDay = PRACTICE_DAYS.find((day) => !isDayComplete(day, progress)) || PRACTICE_DAYS.at(-1)
   const [selectedDayId, setSelectedDayId] = useState(() => {
-    const saved = readPracticeData()
+    const saved = readLocalPracticeData() || EMPTY_PRACTICE
     return (PRACTICE_DAYS.find((day) => !isDayComplete(day, saved)) || PRACTICE_DAYS.at(-1)).id
   })
   const currentDay = PRACTICE_DAYS[selectedDayId - 1] || recommendedDay
@@ -401,7 +452,44 @@ function Practice() {
   const recommendedReviewIds = useMemo(() => new Set(recommendedReviews.map(({ problem }) => problem.id)), [recommendedReviews])
   const waitingReviewCount = dueProblems.length - recommendedReviews.length
 
-  useEffect(() => { window.localStorage.setItem('northstar-practice-v2', JSON.stringify(progress)) }, [progress])
+  useEffect(() => {
+    let cancelled = false
+    const hydrate = async () => {
+      const local = readLocalPracticeData()
+      try {
+        const server = await api.getPractice()
+        if (cancelled) return
+        const next = server.updatedAt ? normalizePracticeData(server) : (local || EMPTY_PRACTICE)
+        setProgress(next)
+        setSelectedDayId((PRACTICE_DAYS.find((day) => !isDayComplete(day, next)) || PRACTICE_DAYS.at(-1)).id)
+        if (!server.updatedAt && local && hasPracticeData(local)) await api.savePractice(local)
+        if (!cancelled) { setPracticeReady(true); setSyncState('saved') }
+      } catch {
+        if (cancelled) return
+        const next = local || EMPTY_PRACTICE
+        setProgress(next)
+        setSelectedDayId((PRACTICE_DAYS.find((day) => !isDayComplete(day, next)) || PRACTICE_DAYS.at(-1)).id)
+        setPracticeReady(true)
+        setSyncState(local ? 'offline' : 'error')
+      }
+    }
+    hydrate()
+    return () => { cancelled = true }
+  }, [])
+  useEffect(() => {
+    if (!practiceReady) return undefined
+    try { window.localStorage.setItem('northstar-practice-v2', JSON.stringify(progress)) } catch {}
+    setSyncState('saving')
+    const saveTimer = window.setTimeout(async () => {
+      try {
+        await api.savePractice(progress)
+        setSyncState('saved')
+      } catch {
+        setSyncState('offline')
+      }
+    }, 350)
+    return () => window.clearTimeout(saveTimer)
+  }, [practiceReady, progress])
   useEffect(() => {
     if (!timerRunning) return undefined
     const timer = window.setInterval(() => setSeconds((value) => {
@@ -442,18 +530,27 @@ function Practice() {
   }))
   const removeProblem = (id) => setProgress((current) => ({ ...current, problems: current.problems.filter((problem) => problem.id !== id) }))
   const timerLabel = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+  const syncLabel = syncState === 'loading'
+    ? 'Restoring saved progress…'
+    : syncState === 'saving'
+      ? 'Saving to workspace…'
+      : syncState === 'offline'
+        ? 'Server unavailable — local backup kept'
+        : syncState === 'error'
+          ? 'Not connected — local backup only'
+          : 'Saved to workspace'
 
   return <section className="page practice-page">
     <PageHeading title="Build interview confidence." copy="A beginner-friendly plan that turns practice into patterns you can recognize." />
     <div className="practice-focus-grid">
       <section className="practice-today panel">
-        <div className="practice-today-copy"><div className="day-title-row"><span>{currentDay.id === recommendedDay.id ? 'Today' : 'Editing'} · Day {currentDay.id}</span><div className="day-switcher"><button className="icon-button" disabled={currentDay.id === 1} onClick={() => setSelectedDayId((day) => Math.max(1, day - 1))} aria-label="Previous day"><ArrowRight /></button><select aria-label="Choose practice day" value={currentDay.id} onChange={(event) => setSelectedDayId(Number(event.target.value))}>{PRACTICE_DAYS.map((day) => <option value={day.id} key={day.id}>Day {day.id}{isDayComplete(day, progress) ? ' ✓' : ''}</option>)}</select><button className="icon-button" disabled={currentDay.id === 28} onClick={() => setSelectedDayId((day) => Math.min(28, day + 1))} aria-label="Next day"><ArrowRight /></button></div></div><h2>{currentDay.id === 1 ? 'Start with arrays, not pressure.' : currentDay.title}</h2><p>Two focused problems today, followed by a short reflection.</p></div>
+        <div className="practice-today-copy"><div className="day-title-row"><span>{currentDay.id === recommendedDay.id ? 'Today' : 'Editing'} · Day {currentDay.id}</span><div className="day-switcher"><button className="icon-button" disabled={!practiceReady || currentDay.id === 1} onClick={() => setSelectedDayId((day) => Math.max(1, day - 1))} aria-label="Previous day"><ArrowRight /></button><select aria-label="Choose practice day" disabled={!practiceReady} value={currentDay.id} onChange={(event) => setSelectedDayId(Number(event.target.value))}>{PRACTICE_DAYS.map((day) => <option value={day.id} key={day.id}>Day {day.id}{isDayComplete(day, progress) ? ' ✓' : ''}</option>)}</select><button className="icon-button" disabled={!practiceReady || currentDay.id === 28} onClick={() => setSelectedDayId((day) => Math.min(28, day + 1))} aria-label="Next day"><ArrowRight /></button></div></div><h2>{currentDay.id === 1 ? 'Start with arrays, not pressure.' : currentDay.title}</h2><p>Two focused problems today, followed by a short reflection.</p><div className={`practice-save-status status-${syncState}`} aria-live="polite">{syncLabel}</div></div>
         <div className="today-tasks">
           {currentDay.tasks.map((task, index) => <label className={progress.checks[`${currentDay.id}-${index}`] ? 'complete' : ''} key={task}>
-            <input type="checkbox" checked={Boolean(progress.checks[`${currentDay.id}-${index}`])} onChange={() => toggleTask(currentDay, index)} /><span className="task-check"><Check /></span><span>{task}</span><ChevronDown />
+            <input type="checkbox" disabled={!practiceReady} checked={Boolean(progress.checks[`${currentDay.id}-${index}`])} onChange={() => toggleTask(currentDay, index)} /><span className="task-check"><Check /></span><span>{task}</span><ChevronDown />
           </label>)}
         </div>
-        <label className="reflection-field"><span><Brain /> Reflect · {currentDay.reflectionPrompt}</span><textarea value={progress.notes[currentDay.id] || ''} onChange={(event) => updateNote(event.target.value)} placeholder="What clicked? Where did you get stuck? What will you try next time?" /><small>{progress.notes[currentDay.id] ? 'Saved automatically — return to any day to review or edit.' : 'Your note saves automatically.'}</small></label>
+        <label className="reflection-field"><span><Brain /> Reflect · {currentDay.reflectionPrompt}</span><textarea disabled={!practiceReady} value={progress.notes[currentDay.id] || ''} onChange={(event) => updateNote(event.target.value)} placeholder="What clicked? Where did you get stuck? What will you try next time?" /><small>{progress.notes[currentDay.id] ? 'Saved to your workspace — return to any day to review or edit.' : 'Your note saves automatically to your workspace.'}</small></label>
         <footer><span><Clock3 /> {timerRunning || seconds < 45 * 60 ? timerLabel : '45–60 min'}</span><button className="button primary" onClick={() => { if (seconds === 0) setSeconds(45 * 60); setTimerRunning((running) => !running) }}>{timerRunning ? 'Pause session' : seconds < 45 * 60 && seconds > 0 ? 'Continue session' : "Start today's session"}</button></footer>
       </section>
       <section className="graduation-panel panel">
@@ -481,6 +578,40 @@ function Practice() {
       </div> : null}
     </section>
   </section>
+}
+
+function ActionModal({ item, onClose, onComplete, onEdit, historyOnly = false }) {
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [historyError, setHistoryError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    api.listActions(item.id)
+      .then((actions) => { if (!cancelled) setHistory(actions) })
+      .catch((error) => { if (!cancelled) setHistoryError(error.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [item.id])
+
+  const markDone = async () => {
+    setSaving(true)
+    const completed = await onComplete(item)
+    setSaving(false)
+    if (completed) onClose()
+  }
+
+  return <div className="modal-layer" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <section className="modal action-modal" role="dialog" aria-modal="true" aria-labelledby="action-modal-title">
+      <header><div><span>{historyOnly ? 'Action history' : 'Upcoming action'}</span><h2 id="action-modal-title">{historyOnly ? `${item.company} history` : item.nextStep || 'Follow up'}</h2><p>{item.company} · {item.role}</p></div><button className="icon-button" onClick={onClose} aria-label="Close action details"><X /></button></header>
+      <div className="action-modal-body">
+        {historyOnly ? <p className="action-modal-help history-intro">Completed actions for this application. New pending actions can be added from Edit application.</p> : <><div className="action-current-card"><span className="action-icon"><CalendarDays /></span><div><strong>{item.nextStep || 'Follow up'}</strong><span>{item.company} · {item.role}</span></div><time>{formatDate(item.nextDate, true)}</time></div><p className="action-modal-help">Marking this done will log it in the history below and clear it from Upcoming actions. The application itself stays in its current pipeline status.</p></>}
+        <section className="action-history"><div className="tracker-heading"><h3>Completed history</h3><span>{loading ? 'Loading…' : `${history.length} logged`}</span></div>{historyError ? <p className="history-error">{historyError}</p> : null}{!loading && !history.length && !historyError ? <div className="history-empty"><Clock3 /><span>No completed actions logged yet.</span></div> : null}{history.map((entry) => <article key={entry.id}><span className="history-check"><Check /></span><div><strong>{entry.action}</strong><span>Due {formatDate(entry.dueDate, true)} · Completed {formatDateTime(entry.completedAt)}</span></div></article>)}</section>
+      </div>
+      <footer className="action-modal-footer"><button className="button subtle" onClick={onClose}>Close</button>{!historyOnly ? <><button className="button outline" onClick={onEdit}><Pencil /> Edit application</button><button className="button primary" onClick={markDone} disabled={saving}>{saving ? 'Saving…' : <><Check /> Mark done</>}</button></> : null}</footer>
+    </section>
+  </div>
 }
 
 function ProfileModal({ profile, onClose, onSave }) {
@@ -551,6 +682,8 @@ export default function App() {
   const [profile, setProfile] = useState({ firstName: 'Alex', lastName: 'Johnson', email: 'alex.johnson@example.com', role: 'Job seeker', location: 'Singapore' })
   const [editing, setEditing] = useState(undefined)
   const [modalOpen, setModalOpen] = useState(false)
+  const [actionItem, setActionItem] = useState(undefined)
+  const [historyItem, setHistoryItem] = useState(undefined)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
@@ -572,14 +705,27 @@ export default function App() {
     return () => window.removeEventListener('hashchange', syncPageFromHash)
   }, [])
 
-  const openAdd = () => { setEditing(undefined); setModalOpen(true) }
-  const openEdit = (item) => { setEditing(item); setModalOpen(true) }
+  const openAdd = () => { setActionItem(undefined); setHistoryItem(undefined); setEditing(undefined); setModalOpen(true) }
+  const openEdit = (item) => { setActionItem(undefined); setHistoryItem(undefined); setEditing(item); setModalOpen(true) }
+  const openAction = (item) => { setModalOpen(false); setHistoryItem(undefined); setActionItem(item) }
+  const openHistory = (item) => { setModalOpen(false); setActionItem(undefined); setHistoryItem(item) }
   const save = async (item) => {
     try {
       const saved = await api.save(item)
       setApplications((current) => item.id ? current.map((entry) => entry.id === saved.id ? saved : entry) : [saved, ...current])
       setModalOpen(false); notify(item.id ? 'Application updated' : 'Application added')
     } catch (e) { setError(e.message) }
+  }
+  const completeAction = async (item) => {
+    try {
+      const result = await api.completeAction(item.id, item.nextStep, item.nextDate || '')
+      setApplications((current) => current.map((entry) => entry.id === result.application.id ? result.application : entry))
+      notify('Action marked done and logged')
+      return true
+    } catch (e) {
+      setError(e.message)
+      return false
+    }
   }
   const remove = async (item) => {
     if (!window.confirm(`Delete the application for ${item.role} at ${item.company}?`)) return
@@ -600,13 +746,15 @@ export default function App() {
   }
 
   const pages = {
-    overview: <Overview applications={applications} setPage={setPage} onEdit={openEdit} profile={profile} />,
-    applications: <Applications applications={applications} onEdit={openEdit} onDelete={remove} />,
+    overview: <Overview applications={applications} setPage={setPage} onEdit={openEdit} onAction={openAction} profile={profile} />,
+    applications: <Applications applications={applications} onEdit={openEdit} onDelete={remove} onHistory={openHistory} />,
     pipeline: <Pipeline applications={applications} onEdit={openEdit} />,
     practice: <Practice />,
   }
   return <AppShell page={page} setPage={setPage} onAdd={openAdd} onImport={importCsv} profile={profile} onSaveProfile={saveProfile}>
     {loading ? <div className="loading"><span /><p>Finding your north star…</p></div> : pages[page] || pages.overview}
+    {actionItem ? <ActionModal item={actionItem} onClose={() => setActionItem(undefined)} onComplete={completeAction} onEdit={() => openEdit(actionItem)} /> : null}
+    {historyItem ? <ActionModal item={historyItem} historyOnly onClose={() => setHistoryItem(undefined)} /> : null}
     {modalOpen ? <ApplicationModal item={editing} onClose={() => setModalOpen(false)} onSave={save} /> : null}
     {error ? <div className="error-banner"><span>{error}</span><button onClick={() => setError('')} aria-label="Dismiss error"><X /></button></div> : null}
     <Toast message={toast} />

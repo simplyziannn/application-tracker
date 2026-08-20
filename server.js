@@ -4,12 +4,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dataDir = path.join(__dirname, 'data')
+const dataDir = path.resolve(process.env.NORTHSTAR_DATA_DIR || path.join(__dirname, 'data'))
 const csvPath = path.join(dataDir, 'applications.csv')
 const profilePath = path.join(dataDir, 'profile.csv')
+const practicePath = path.join(dataDir, 'practice.csv')
+const actionsPath = path.join(dataDir, 'actions.csv')
 const fields = ['id', 'company', 'role', 'type', 'location', 'status', 'appliedDate', 'nextStep', 'nextDate', 'source', 'salary', 'url', 'notes']
 const profileFields = ['firstName', 'lastName', 'email', 'role', 'location']
+const practiceFields = ['checks', 'notes', 'problems', 'updatedAt']
+const actionFields = ['id', 'applicationId', 'action', 'dueDate', 'completedAt']
 const defaultProfile = { firstName: 'Alex', lastName: 'Johnson', email: 'alex.johnson@example.com', role: 'Job seeker', location: 'Singapore' }
+const emptyPractice = { checks: {}, notes: {}, problems: [], updatedAt: null }
 
 const parseCsv = (text) => {
   const rows = []
@@ -37,6 +42,15 @@ const escapeCell = (value = '') => {
 }
 
 const toCsv = (rows, columns) => [columns.join(','), ...rows.map((item) => columns.map((field) => escapeCell(item[field])).join(','))].join('\n') + '\n'
+
+const parseJsonCell = (value, fallback) => {
+  try {
+    const parsed = JSON.parse(value || '')
+    return parsed && typeof parsed === 'object' ? parsed : fallback
+  } catch { return fallback }
+}
+
+const isRecord = (value) => value && typeof value === 'object' && !Array.isArray(value)
 
 const readApplications = async () => {
   try { return parseCsv(await fs.readFile(csvPath, 'utf8')) }
@@ -71,6 +85,56 @@ const writeProfile = async (profile) => {
   await fs.rename(tempPath, profilePath)
 }
 
+const readPractice = async () => {
+  try {
+    const parsed = parseCsv(await fs.readFile(practicePath, 'utf8'))[0]
+    if (!parsed) return emptyPractice
+    return {
+      checks: parseJsonCell(parsed.checks, {}),
+      notes: parseJsonCell(parsed.notes, {}),
+      problems: Array.isArray(parseJsonCell(parsed.problems, [])) ? parseJsonCell(parsed.problems, []) : [],
+      updatedAt: parsed.updatedAt || null,
+    }
+  } catch (error) {
+    if (error.code === 'ENOENT') return emptyPractice
+    throw error
+  }
+}
+
+const writePractice = async (practice) => {
+  await fs.mkdir(dataDir, { recursive: true })
+  const tempPath = `${practicePath}.tmp`
+  const snapshot = {
+    checks: isRecord(practice.checks) ? practice.checks : {},
+    notes: isRecord(practice.notes) ? practice.notes : {},
+    problems: Array.isArray(practice.problems) ? practice.problems : [],
+    updatedAt: new Date().toISOString(),
+  }
+  await fs.writeFile(tempPath, toCsv([{
+    checks: JSON.stringify(snapshot.checks),
+    notes: JSON.stringify(snapshot.notes),
+    problems: JSON.stringify(snapshot.problems),
+    updatedAt: snapshot.updatedAt,
+  }], practiceFields), 'utf8')
+  await fs.rename(tempPath, practicePath)
+  return snapshot
+}
+
+const readActions = async () => {
+  try { return parseCsv(await fs.readFile(actionsPath, 'utf8')) }
+  catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+const writeActions = async (actions) => {
+  await fs.mkdir(dataDir, { recursive: true })
+  const tempPath = `${actionsPath}.tmp`
+  await fs.writeFile(tempPath, toCsv(actions, actionFields), 'utf8')
+  await fs.rename(tempPath, actionsPath)
+}
+
 const app = express()
 app.use(express.json({ limit: '2mb' }))
 
@@ -82,6 +146,24 @@ app.get('/api/applications', async (_req, res) => {
 app.get('/api/profile', async (_req, res) => {
   try { res.json(await readProfile()) }
   catch (error) { res.status(500).json({ error: error.message }) }
+})
+
+app.get('/api/practice', async (_req, res) => {
+  try { res.json(await readPractice()) }
+  catch (error) { res.status(500).json({ error: error.message }) }
+})
+
+app.put('/api/practice', async (req, res) => {
+  try {
+    if (!req.body || typeof req.body !== 'object') return res.status(400).json({ error: 'Practice data must be an object' })
+    const current = await readPractice()
+    const saved = await writePractice({
+      checks: isRecord(req.body.checks) ? req.body.checks : current.checks,
+      notes: isRecord(req.body.notes) ? req.body.notes : current.notes,
+      problems: Array.isArray(req.body.problems) ? req.body.problems : current.problems,
+    })
+    res.json(saved)
+  } catch (error) { res.status(500).json({ error: error.message }) }
 })
 
 app.put('/api/profile', async (req, res) => {
@@ -110,6 +192,44 @@ app.put('/api/applications/:id', async (req, res) => {
     applications[index] = { ...applications[index], ...req.body, id: req.params.id }
     await writeApplications(applications)
     res.json(applications[index])
+  } catch (error) { res.status(500).json({ error: error.message }) }
+})
+
+app.get('/api/applications/:id/actions', async (req, res) => {
+  try {
+    const actions = await readActions()
+    res.json(actions.filter((action) => action.applicationId === req.params.id).sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || '')))
+  } catch (error) { res.status(500).json({ error: error.message }) }
+})
+
+app.post('/api/applications/:id/actions/complete', async (req, res) => {
+  try {
+    const applications = await readApplications()
+    const index = applications.findIndex((item) => item.id === req.params.id)
+    if (index === -1) return res.status(404).json({ error: 'Application not found' })
+
+    const action = String(req.body?.action || '').trim()
+    const dueDate = String(req.body?.dueDate || '').trim()
+    if (!action) return res.status(400).json({ error: 'An action is required' })
+    if (applications[index].nextStep !== action || (applications[index].nextDate || '') !== dueDate) {
+      return res.status(409).json({ error: 'This upcoming action changed. Refresh and try again.' })
+    }
+
+    const actions = await readActions()
+    const existing = actions.find((entry) => entry.applicationId === req.params.id && entry.action === action && (entry.dueDate || '') === dueDate)
+    const completed = existing || {
+      id: crypto.randomUUID(),
+      applicationId: req.params.id,
+      action,
+      dueDate,
+      completedAt: new Date().toISOString(),
+    }
+    if (!existing) await writeActions([completed, ...actions])
+
+    const updated = { ...applications[index], nextStep: '', nextDate: '' }
+    applications[index] = updated
+    await writeApplications(applications)
+    res.json({ application: updated, action: completed })
   } catch (error) { res.status(500).json({ error: error.message }) }
 })
 
